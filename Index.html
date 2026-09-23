@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Huygens - Personal Growth & Focus</title>
+  <link rel="manifest" id="manifest-placeholder">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --bg-hover: #334155;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Sidebar Navigation */
+    nav {
+      width: 250px;
+      background: #090d16;
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .motto {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-bottom: 15px;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 15px;
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover, .nav-btn.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    .nav-btn.active {
+      border-left: 4px solid var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    /* Header Quote Banner */
+    .quote-banner {
+      background: linear-gradient(135deg, #1e1b4b, #311042);
+      border: 1px solid #4338ca;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .quote-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 5px;
+    }
+
+    .quote-text {
+      font-size: 0.95rem;
+      color: #e0e7ff;
+    }
+
+    /* Canvas Sections */
+    .canvas {
+      display: none;
+    }
+
+    .canvas.active {
+      display: block;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-weight: 600;
+      font-size: 1.4rem;
+    }
+
+    /* Common Card Styling */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* Canvas 1: To-Do Board */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .kanban-col {
+      background: #111827;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 15px;
+      min-height: 350px;
+    }
+
+    .kanban-col h3 {
+      font-size: 1rem;
+      margin-bottom: 15px;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .task-item {
+      background: var(--bg-card);
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      cursor: grab;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    .task-item:active {
+      cursor: grabbing;
+    }
+
+    .task-time {
+      font-size: 0.75rem;
+      color: var(--warning);
+      margin-top: 5px;
+      display: block;
+    }
+
+    /* Canvas 2: Finance Manager */
+    .finance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-box {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--success);
+      margin-top: 10px;
+    }
+
+    .list-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    .list-table th, .list-table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    /* Canvas 3: Productivity Tracker & Music */
+    .prod-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      body { flex-direction: column; }
+      nav { width: 100%; height: auto; }
+      main { height: auto; }
+      .prod-grid { grid-template-columns: 1fr; }
+    }
+
+    .star-rating {
+      display: flex;
+      gap: 5px;
+      cursor: pointer;
+      color: var(--warning);
+      font-size: 1.2rem;
+    }
+
+    /* Canvas 4: Calendar Diary */
+    .diary-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 800px) {
+      .diary-layout { grid-template-columns: 1fr; }
+    }
+
+    .calendar-container {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 15px;
+      border: 1px solid var(--border);
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      text-align: center;
+    }
+
+    .cal-day-head {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding-bottom: 5px;
+    }
+
+    .cal-date {
+      padding: 8px 0;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #111827;
+    }
+
+    .cal-date:hover {
+      background: var(--bg-hover);
+    }
+
+    .cal-date.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .cal-date.has-entry {
+      border: 1px solid var(--success);
+    }
+
+    /* Inputs & Buttons */
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-main);
+      margin-top: 5px;
+      margin-bottom: 10px;
+    }
+
+    button.btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    button.btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-small {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+    }
+
+    /* Audio Player Custom */
+    .audio-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Sidebar -->
+  <nav>
+    <div>
+      <div class="brand">HUYGENS</div>
+      <div class="motto">"Something is better than nothing"</div>
+    </div>
+    <button class="nav-btn active" onclick="switchCanvas('todo')">📋 Task Board</button>
+    <button class="nav-btn" onclick="switchCanvas('finance')">💰 Finance Manager</button>
+    <button class="nav-btn" onclick="switchCanvas('productivity')">⚡ Productivity & Focus</button>
+    <button class="nav-btn" onclick="switchCanvas('diary')">📖 Learning Diary</button>
+  </nav>
+
+  <!-- Main Canvas Content -->
+  <main>
+    <!-- Daily Quote Banner -->
+    <div class="quote-banner">
+      <div class="quote-title">Daily Focus & Motivation</div>
+      <div class="quote-text" id="daily-quote">Loading daily wisdom...</div>
+    </div>
+
+    <!-- CANVAS 1: TO-DO BOARD -->
+    <section id="canvas-todo" class="canvas active">
+      <h2>Task Management</h2>
+      <div class="card">
+        <h3>Add New Task</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <input type="text" id="task-input" placeholder="Task description..." style="flex:2;">
+          <select id="task-target" style="flex:1;">
+            <option value="col-tomorrow">Tomorrow</option>
+            <option value="col-week">This Week</option>
+            <option value="col-month">This Month</option>
+            <option value="col-year">This Year</option>
+            <option value="col-long">Long Term</option>
+          </select>
+          <input type="time" id="task-time" style="flex:1;">
+          <button class="btn" onclick="addTask()">Add Task</button>
+        </div>
+      </div>
+
+      <div class="kanban-board">
+        <div class="kanban-col" id="col-tomorrow" ondrop="drop(event)" ondragover="allowDrop(event)">
+          <h3>Tomorrow</h3>
+        </div>
+        <div class="kanban-col" id="col-week" ondrop="drop(event)" ondragover="allowDrop(event)">
+          <h3>This Week</h3>
+        </div>
+        <div class="kanban-col" id="col-month" ondrop="drop(event)" ondragover="allowDrop(event)">
+          <h3>This Month</h3>
+        </div>
+        <div class="kanban-col" id="col-year" ondrop="drop(event)" ondragover="allowDrop(event)">
+          <h3>This Year</h3>
+        </div>
+        <div class="kanban-col" id="col-long" ondrop="drop(event)" ondragover="allowDrop(event)">
+          <h3>Long Term</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- CANVAS 2: FINANCE MANAGER -->
+    <section id="canvas-finance" class="canvas">
+      <h2>Monthly Finance Tracker</h2>
+      <div class="finance-grid">
+        <div class="card">
+          <h3>Set Monthly Budget</h3>
+          <input type="number" id="budget-input" placeholder="Enter budget limit (₹)">
+          <button class="btn" onclick="setBudget()">Update Budget</button>
+          <div style="margin-top: 15px;">
+            <div>Budget Limit: <span id="disp-budget">₹0</span></div>
+            <div>Total Spent: <span id="disp-spent">₹0</span></div>
+            <div class="stat-box" id="disp-remaining">Remaining: ₹0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Log Expense</h3>
+          <input type="text" id="exp-title" placeholder="Expense description">
+          <input type="number" id="exp-amount" placeholder="Amount (₹)">
+          <button class="btn" onclick="addExpense()">Add Expense</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Recent Expenses</h3>
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="expense-list-body">
+            <!-- Expenses populated here -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CANVAS 3: PRODUCTIVITY & FOCUS -->
+    <section id="canvas-productivity" class="canvas">
+      <h2>Productivity & Focus Station</h2>
+      <div class="prod-grid">
+        <!-- ADHD Focus Player -->
+        <div class="card">
+          <h3>ADHD Calming Music & Ambient Sound</h3>
+          <p style="font-size:0.85rem; color: var(--text-muted); margin-bottom:10px;">
+            Generates soothing pink noise designed to quiet mental clutter.
+          </p>
+          <div class="audio-controls">
+            <button class="btn" id="audio-toggle-btn" onclick="toggleCalmingSound()">Play Calming Pink Noise</button>
+          </div>
+        </div>
+
+        <!-- Manual Interval Logger -->
+        <div class="card">
+          <h3>Log Productive Time Interval</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label>Start Time</label>
+              <input type="time" id="prod-start">
+            </div>
+            <div>
+              <label>End Time</label>
+              <input type="time" id="prod-end">
+            </div>
+          </div>
+          <label>Productivity Rating (Stars)</label>
+          <select id="prod-stars">
+            <option value="5">⭐⭐⭐⭐⭐ (5 Stars - Peak Focus)</option>
+            <option value="4">⭐⭐⭐⭐ (4 Stars - Good)</option>
+            <option value="3">⭐⭐⭐ (3 Stars - Average)</option>
+            <option value="2">⭐⭐ (2 Stars - Low Focus)</option>
+            <option value="1">⭐ (1 Star - Distracted)</option>
+          </select>
+          <button class="btn" onclick="logProductivityInterval()" style="margin-top:10px;">Log Interval</button>
+        </div>
+      </div>
+
+      <!-- Productivity Analytics Chart -->
+      <div class="card">
+        <h3>Productivity Hours Analytics</h3>
+        <div style="max-height: 300px;">
+          <canvas id="productivityChart"></canvas>
+        </div>
+        <div style="margin-top:15px; font-weight: 600;">
+          Average Daily Productive Hours: <span id="avg-prod-hours" style="color:var(--accent);">0 hrs</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CANVAS 4: CALENDAR DIARY -->
+    <section id="canvas-diary" class="canvas">
+      <h2>Learning & Reflection Diary</h2>
+      <div class="diary-layout">
+        <!-- Calendar View -->
+        <div class="calendar-container">
+          <div class="calendar-header">
+            <button class="btn btn-small" onclick="changeMonth(-1)">◀</button>
+            <span id="cal-month-year" style="font-weight:600;">Month Year</span>
+            <button class="btn btn-small" onclick="changeMonth(1)">▶</button>
+          </div>
+          <div class="calendar-grid">
+            <div class="cal-day-head">Su</div>
+            <div class="cal-day-head">Mo</div>
+            <div class="cal-day-head">Tu</div>
+            <div class="cal-day-head">We</div>
+            <div class="cal-day-head">Th</div>
+            <div class="cal-day-head">Fr</div>
+            <div class="cal-day-head">Sa</div>
+          </div>
+          <div class="calendar-grid" id="cal-dates-grid" style="margin-top: 5px;">
+            <!-- Dates generated via JS -->
+          </div>
+        </div>
+
+        <!-- Diary Entry Form -->
+        <div class="card">
+          <h3 id="diary-entry-title">Diary Entry for YYYY-MM-DD</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 10px;">
+            Write today's key learnings and mistakes to avoid repeating them.
+          </p>
+          <textarea id="diary-text" rows="12" placeholder="What did you learn today? What mistakes will you avoid tomorrow?"></textarea>
+          <button class="btn" onclick="saveDiaryEntry()">Save Entry</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /* ==========================================
+       PWA MANIFEST & SERVICE WORKER INLINING
+       ========================================== */
+    const manifestObj = {
+      "name": "Huygens Self Improvement",
+      "short_name": "Huygens",
+      "start_url": ".",
+      "display": "standalone",
+      "background_color": "#0f172a",
+      "theme_color": "#6366f1",
+      "icons": [{
+        "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>",
+        "sizes": "192x192 512x512",
+        "type": "image/svg+xml"
+      }]
+    };
+    const manifestStr = 'data:application/json;base64,' + btoa(JSON.stringify(manifestObj));
+    document.getElementById('manifest-placeholder').setAttribute('href', manifestStr);
+
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+        self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+    }
+
+    /* ==========================================
+       APP STATE MANAGEMENT
+       ========================================== */
+    const state = {
+      tasks: JSON.parse(localStorage.getItem('huygens_tasks')) || [],
+      budget: parseFloat(localStorage.getItem('huygens_budget')) || 0,
+      expenses: JSON.parse(localStorage.getItem('huygens_expenses')) || [],
+      productivityLogs: JSON.parse(localStorage.getItem('huygens_prod')) || [],
+      diaryEntries: JSON.parse(localStorage.getItem('huygens_diary')) || {}
+    };
+
+    function saveData() {
+      localStorage.setItem('huygens_tasks', JSON.stringify(state.tasks));
+      localStorage.setItem('huygens_budget', state.budget.toString());
+      localStorage.setItem('huygens_expenses', JSON.stringify(state.expenses));
+      localStorage.setItem('huygens_prod', JSON.stringify(state.productivityLogs));
+      localStorage.setItem('huygens_diary', JSON.stringify(state.diaryEntries));
+    }
+
+    // Canvas Switcher
+    function switchCanvas(canvasName) {
+      document.querySelectorAll('.canvas').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`canvas-${canvasName}`).classList.add('active');
+      event.currentTarget.classList.add('active');
+
+      if (canvasName === 'productivity') renderChart();
+      if (canvasName === 'diary') renderCalendar();
+    }
+
+    /* ==========================================
+       DAILY QUOTE & NOTIFICATIONS
+       ========================================== */
+    const quotes = [
+      "Small discipline gains build unstoppable long-term momentum.",
+      "Consistency beats intensity every single time.",
+      "Focus on the process, and results will follow naturally.",
+      "You don't need to be perfect; you just need to start.",
+      "Mastering yourself is the true ultimate power."
+    ];
+    document.getElementById('daily-quote').innerText = quotes[Math.floor(Math.random() * quotes.length)];
+
+    // Random Motivational Push Notifications
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+
+    function scheduleNotification() {
+      if ("Notification" in window && Notification.permission === "granted") {
+        const randomTime = Math.floor(Math.random() * (7200000 - 1800000)) + 1800000; // 30m to 2h
+        setTimeout(() => {
+          new Notification("Huygens Focus Alert", {
+            body: quotes[Math.floor(Math.random() * quotes.length)],
+            icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>"
+          });
+          scheduleNotification();
+        }, randomTime);
+      }
+    }
+    scheduleNotification();
+
+    /* ==========================================
+       CANVAS 1: KANBAN TO-DO BOARD
+       ========================================== */
+    function addTask() {
+      const text = document.getElementById('task-input').value.trim();
+      const column = document.getElementById('task-target').value;
+      const time = document.getElementById('task-time').value;
+
+      if (!text) return;
+
+      const newTask = { id: Date.now().toString(), text, column, time };
+      state.tasks.push(newTask);
+      saveData();
+      renderTasks();
+      document.getElementById('task-input').value = '';
+    }
+
+    function renderTasks() {
+      const cols = ['col-tomorrow', 'col-week', 'col-month', 'col-year', 'col-long'];
+      cols.forEach(colId => {
+        const colEl = document.getElementById(colId);
+        colEl.innerHTML = `<h3>${colEl.querySelector('h3').innerText}</h3>`;
+      });
+
+      state.tasks.forEach(task => {
+        const taskEl = document.createElement('div');
+        taskEl.className = 'task-item';
+        taskEl.draggable = true;
+        taskEl.id = task.id;
+        taskEl.ondragstart = drag;
+        taskEl.innerHTML = `
+          <div>${task.text}</div>
+          ${task.time ? `<span class="task-time">⏰ ${task.time}</span>` : ''}
+          <div style="margin-top:5px; display:flex; gap:5px;">
+            <button class="btn btn-small" onclick="editTask('${task.id}')">Edit</button>
+            <button class="btn btn-small" style="background:#ef4444;" onclick="deleteTask('${task.id}')">Delete</button>
+          </div>
+        `;
+        const col = document.getElementById(task.column);
+        if (col) col.appendChild(taskEl);
+      });
+    }
+
+    function allowDrop(ev) { ev.preventDefault(); }
+    function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+    function drop(ev) {
+      ev.preventDefault();
+      const taskId = ev.dataTransfer.getData("text");
+      let targetCol = ev.target;
+      while (!targetCol.classList.contains('kanban-col')) {
+        targetCol = targetCol.parentElement;
+      }
+      const task = state.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.column = targetCol.id;
+        saveData();
+        renderTasks();
+      }
+    }
+
+    function editTask(id) {
+      const task = state.tasks.find(t => t.id === id);
+      const newText = prompt("Edit Task:", task.text);
+      if (newText !== null) {
+        task.text = newText;
+        saveData();
+        renderTasks();
+      }
+    }
+
+    function deleteTask(id) {
+      state.tasks = state.tasks.filter(t => t.id !== id);
+      saveData();
+      renderTasks();
+    }
+
+    /* ==========================================
+       CANVAS 2: FINANCE MANAGER
+       ========================================== */
+    function setBudget() {
+      const val = parseFloat(document.getElementById('budget-input').value);
+      if (!isNaN(val)) {
+        state.budget = val;
+        saveData();
+        renderFinance();
+      }
+    }
+
+    function addExpense() {
+      const title = document.getElementById('exp-title').value.trim();
+      const amount = parseFloat(document.getElementById('exp-amount').value);
+      if (title && !isNaN(amount)) {
+        state.expenses.push({ id: Date.now().toString(), title, amount });
+        saveData();
+        renderFinance();
+        document.getElementById('exp-title').value = '';
+        document.getElementById('exp-amount').value = '';
+      }
+    }
+
+    function deleteExpense(id) {
+      state.expenses = state.expenses.filter(e => e.id !== id);
+      saveData();
+      renderFinance();
+    }
+
+    function renderFinance() {
+      document.getElementById('disp-budget').innerText = `₹${state.budget}`;
+      const totalSpent = state.expenses.reduce((sum, e) => sum + e.amount, 0);
+      document.getElementById('disp-spent').innerText = `₹${totalSpent}`;
+      const remaining = state.budget - totalSpent;
+      const remEl = document.getElementById('disp-remaining');
+      remEl.innerText = `Remaining: ₹${remaining}`;
+      remEl.style.color = remaining < 0 ? '#ef4444' : 'var(--success)';
+
+      const tbody = document.getElementById('expense-list-body');
+      tbody.innerHTML = '';
+      state.expenses.forEach(e => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${e.title}</td>
+          <td>₹${e.amount}</td>
+          <td><button class="btn btn-small" style="background:#ef4444;" onclick="deleteExpense('${e.id}')">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* ==========================================
+       CANVAS 3: PRODUCTIVITY & ADHD MUSIC
+       ========================================== */
+    let audioCtx = null;
+    let noiseNode = null;
+    let isPlayingAudio = false;
+
+    function toggleCalmingSound() {
+      const btn = document.getElementById('audio-toggle-btn');
+      if (!isPlayingAudio) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const bufferSize = audioCtx.sampleRate * 2;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
+        for (let i = 0; i < bufferSize; i++) {
+          let white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+          output[i] *= 0.05; // Keep volume comfortable
+          b6 = white * 0.115926;
+        }
+
+        noiseNode = audioCtx.createBufferSource();
+        noiseNode.buffer = noiseBuffer;
+        noiseNode.loop = true;
+        noiseNode.connect(audioCtx.destination);
+        noiseNode.start();
+        isPlayingAudio = true;
+        btn.innerText = "Stop Calming Pink Noise";
+      } else {
+        if (noiseNode) noiseNode.stop();
+        if (audioCtx) audioCtx.close();
+        isPlayingAudio = false;
+        btn.innerText = "Play Calming Pink Noise";
+      }
+    }
+
+    function logProductivityInterval() {
+      const start = document.getElementById('prod-start').value;
+      const end = document.getElementById('prod-end').value;
+      const stars = parseInt(document.getElementById('prod-stars').value);
+
+      if (!start || !end) return;
+
+      const startDate = new Date(`1970-01-01T${start}:00`);
+      const endDate = new Date(`1970-01-01T${end}:00`);
+      let diffHours = (endDate - startDate) / (1000 * 60 * 60);
+      if (diffHours < 0) diffHours += 24; // Handle midnight crossover
+
+      const today = new Date().toISOString().split('T')[0];
+      state.productivityLogs.push({ date: today, hours: diffHours, stars });
+      saveData();
+      renderChart();
+    }
+
+    let chartInstance = null;
+    function renderChart() {
+      const ctx = document.getElementById('productivityChart').getContext('2d');
+      const dateMap = {};
+
+      state.productivityLogs.forEach(log => {
+        dateMap[log.date] = (dateMap[log.date] || 0) + log.hours;
+      });
+
+      const labels = Object.keys(dateMap).slice(-7);
+      const data = labels.map(l => dateMap[l]);
+
+      const totalHours = data.reduce((a, b) => a + b, 0);
+      const avg = data.length ? (totalHours / data.length).toFixed(1) : 0;
+      document.getElementById('avg-prod-hours').innerText = `${avg} hrs/day`;
+
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels.length ? labels : ['Today'],
+          datasets: [{
+            label: 'Productive Hours',
+            data: data.length ? data : [0],
+            backgroundColor: '#6366f1',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#334155' } },
+            x: { grid: { color: '#334155' } }
+          }
+        }
+      });
+    }
+
+    /* ==========================================
+       CANVAS 4: CALENDAR DIARY
+       ========================================== */
+    let currentCalDate = new Date();
+    let selectedDateStr = new Date().toISOString().split('T')[0];
+
+    function renderCalendar() {
+      const year = currentCalDate.getFullYear();
+      const month = currentCalDate.getMonth();
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      document.getElementById('cal-month-year').innerText = `${monthNames[month]} ${year}`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const grid = document.getElementById('cal-dates-grid');
+      grid.innerHTML = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        grid.appendChild(document.createElement('div'));
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dateEl = document.createElement('div');
+        dateEl.className = `cal-date ${dateStr === selectedDateStr ? 'active' : ''} ${state.diaryEntries[dateStr] ? 'has-entry' : ''}`;
+        dateEl.innerText = d;
+        dateEl.onclick = () => selectDiaryDate(dateStr);
+        grid.appendChild(dateEl);
+      }
+
+      selectDiaryDate(selectedDateStr);
+    }
+
+    function changeMonth(delta) {
+      currentCalDate.setMonth(currentCalDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function selectDiaryDate(dateStr) {
+      selectedDateStr = dateStr;
+      document.getElementById('diary-entry-title').innerText = `Diary Entry for ${dateStr}`;
+      document.getElementById('diary-text').value = state.diaryEntries[dateStr] || '';
+      document.querySelectorAll('.cal-date').forEach(el => el.classList.remove('active'));
+      renderCalendarVisuals();
+    }
+
+    function renderCalendarVisuals() {
+      const dates = document.querySelectorAll('.cal-date');
+      dates.forEach(el => {
+        if (el.innerText && selectedDateStr.endsWith(String(el.innerText).padStart(2, '0'))) {
+          el.classList.add('active');
+        }
+      });
+    }
+
+    function saveDiaryEntry() {
+      const text = document.getElementById('diary-text').value.trim();
+      if (text) {
+        state.diaryEntries[selectedDateStr] = text;
+      } else {
+        delete state.diaryEntries[selectedDateStr];
+      }
+      saveData();
+      renderCalendar();
+      alert('Diary entry saved successfully!');
+    }
+
+    // Initializations
+    renderTasks();
+    renderFinance();
+    renderCalendar();
+  </script>
+</body>
+</html>
