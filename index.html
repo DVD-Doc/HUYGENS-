@@ -80,6 +80,14 @@ footer{text-align:center;color:var(--sub);font-size:11px;padding:20px;}
 .bubble.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px;}
 .bubble.tac{align-self:flex-start;background:var(--bg);border:1px solid var(--line);border-bottom-left-radius:4px;}
 .bubble.err{align-self:flex-start;background:transparent;border:1px dashed var(--warn);color:var(--warn);}
+.tac-bubble{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:26px;box-shadow:var(--shadow);cursor:pointer;z-index:40;display:flex;align-items:center;justify-content:center;}
+.tac-panel{position:fixed;right:16px;left:auto;bottom:calc(86px + env(safe-area-inset-bottom,0px));width:min(340px,88vw);max-height:65vh;background:var(--card);border-radius:16px;box-shadow:var(--shadow);z-index:41;display:none;flex-direction:column;overflow:hidden;border:1px solid var(--line);}
+.tac-panel.open{display:flex;}
+.tac-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--bg);}
+#tacChat{flex:1;display:flex;flex-direction:column;gap:8px;padding:10px;overflow-y:auto;min-height:120px;}
+.tac-input-row{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line);}
+.tac-input-row input{flex:1;}
+@media (max-width:420px){.tac-panel{right:8px;left:8px;width:auto;}}
 </style>
 </head>
 <body>
@@ -95,7 +103,6 @@ footer{text-align:center;color:var(--sub);font-size:11px;padding:20px;}
   <button data-tab="finance">💰 Finance</button>
   <button data-tab="focus">🎯 Focus</button>
   <button data-tab="diary">📔 Diary</button>
-  <button data-tab="tac">🤖 Tac</button>
   <button data-tab="settings">⚙️ Settings</button>
 </nav>
 
@@ -219,36 +226,6 @@ footer{text-align:center;color:var(--sub);font-size:11px;padding:20px;}
     </div>
   </section>
 
-  <!-- TAC (Gemini-powered assistant) -->
-  <section id="tac">
-    <div class="card">
-      <h2>Connect your Gemini API key</h2>
-      <p class="small">Get a free key at Google AI Studio (aistudio.google.com/app/apikey). Your key is stored only in this browser and sent only to Google when you send a message — never to Anthropic or anyone else.</p>
-      <div class="row">
-        <input type="password" id="geminiKey" placeholder="Paste your Gemini API key" style="flex:2;min-width:180px">
-        <input id="geminiModel" placeholder="Model" value="gemini-2.0-flash" style="width:150px">
-        <button class="btn" onclick="saveGeminiConfig()">Save</button>
-      </div>
-      <p class="small" id="geminiStatus" style="margin-top:6px"></p>
-    </div>
-    <div class="card">
-      <h2>Tac's character (system prompt)</h2>
-      <p class="small">This is sent before every message and Tac must strictly follow it. Edit it to add anything more about yourself.</p>
-      <textarea id="tacSystemPrompt" rows="8" style="width:100%;font-family:inherit;font-size:12.5px"></textarea>
-      <div style="text-align:right;margin-top:6px"><button class="btn ghost" onclick="saveSystemPrompt()">Save character</button></div>
-    </div>
-    <div class="card">
-      <h2>Talk to Tac</h2>
-      <div id="tacChat" style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;margin-bottom:10px"></div>
-      <div class="row">
-        <input id="tacInput" placeholder="Ask Tac anything..." style="flex:1;min-width:150px" onkeydown="if(event.key==='Enter')sendTac()">
-        <button class="btn" onclick="sendTac()">Send</button>
-        <button class="btn ghost" onclick="clearTacChat()">Clear</button>
-      </div>
-      <p class="small" id="tacHint" style="margin-top:8px">Tac reads your tasks, budget, focus history and recent diary lines automatically to give grounded advice, not generic tips.</p>
-    </div>
-  </section>
-
   <!-- SETTINGS -->
   <section id="settings">
     <div class="card">
@@ -293,6 +270,42 @@ footer{text-align:center;color:var(--sub);font-size:11px;padding:20px;}
 </main>
 <footer>Huygens — a quiet room for your attention, named after the mind that first timed the world accurately.</footer>
 <div class="toast" id="toast"></div>
+
+<!-- TAC: floating assistant, reachable from every canvas -->
+<button id="tacBubble" class="tac-bubble" onclick="toggleTacPanel()">🤖</button>
+<div id="tacPanel" class="tac-panel">
+  <div class="tac-head">
+    <span style="font-weight:700">🤖 Tac</span>
+    <div>
+      <button class="icon-btn" style="font-size:18px" onclick="toggleTacSettings()">⋯</button>
+      <button class="icon-btn" style="font-size:16px" onclick="toggleTacPanel()">✕</button>
+    </div>
+  </div>
+  <div id="tacSettingsBox" style="display:none;padding:10px;border-bottom:1px solid var(--line);overflow-y:auto">
+    <p class="small">Pick a provider and paste your own key. Nothing here is sent to Anthropic — only to the provider you choose, when you send a message.</p>
+    <div class="row" style="margin-top:6px">
+      <select id="aiProvider" onchange="onProviderChange()" style="flex:1">
+        <option value="gemini">Google Gemini</option>
+        <option value="openai">OpenAI (ChatGPT)</option>
+        <option value="grok">xAI (Grok)</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <input type="password" id="aiKey" placeholder="API key" style="flex:2;min-width:140px">
+      <input id="aiModel" placeholder="Model" style="width:120px">
+    </div>
+    <div style="text-align:right;margin-top:6px"><button class="btn" style="padding:6px 12px;font-size:12px" onclick="saveAIConfig()">Save connection</button></div>
+    <p class="small" id="aiStatus" style="margin-top:4px"></p>
+    <p class="small" style="margin-top:10px">Tac's character (system prompt) — sent before every message:</p>
+    <textarea id="tacSystemPrompt" rows="7" style="width:100%;font-family:inherit;font-size:12px;margin-top:4px"></textarea>
+    <div style="text-align:right;margin-top:6px"><button class="btn ghost" style="padding:6px 12px;font-size:12px" onclick="saveSystemPrompt()">Save character</button></div>
+  </div>
+  <div id="tacChat"></div>
+  <div class="tac-input-row">
+    <input id="tacInput" placeholder="Ask Tac anything..." onkeydown="if(event.key==='Enter')sendTac()">
+    <button class="btn" style="padding:8px 12px" onclick="sendTac()">➤</button>
+  </div>
+</div>
 
 <script>
 const QUOTES=["Something is better than nothing.","Small steps still move you forward.","Discipline is choosing what you want most over what you want now.","You don't need to feel ready to start.","Progress, not perfection.","One honest hour beats ten distracted ones.","Your future self is watching — make them proud.","Done is better than perfect.","Momentum comes from motion, not motivation.","Rest is part of the work, not the opposite of it.","You are not behind, you are on your own timeline.","A messy start beats a perfect plan that never begins.","Consistency beats intensity.","Today's small win is tomorrow's habit.","The task you're avoiding is usually the one that matters most.","You already have everything you need to begin.","Focus on the next five minutes, not the whole mountain.","Your brain isn't broken, it just needs the right system.","Every version of you gets a little stronger.","Show up. That's 90% of it."];
@@ -535,12 +548,13 @@ function startTimer(){
   if(running)return;
   if(timerSecs<=0)timerSecs=(parseInt(document.getElementById('focusMins').value)||25)*60;
   running=true;
+  try{updateNowPlaying();}catch(e){}
   timerInt=setInterval(()=>{
     timerSecs--;document.getElementById('timerDisplay').textContent=fmt(timerSecs);
-    if(timerSecs<=0){clearInterval(timerInt);running=false;lastSessionMins=parseInt(document.getElementById('focusMins').value)||25;document.getElementById('ratePrompt').style.display='block';buildStars();notify('Focus session done','Rate how productive that felt.');}
+    if(timerSecs<=0){clearInterval(timerInt);running=false;lastSessionMins=parseInt(document.getElementById('focusMins').value)||25;document.getElementById('ratePrompt').style.display='block';buildStars();notify('Focus session done','Rate how productive that felt.');try{updateNowPlaying();}catch(e){}}
   },1000);
 }
-function pauseTimer(){running=false;clearInterval(timerInt);}
+function pauseTimer(){running=false;clearInterval(timerInt);try{updateNowPlaying();}catch(e){}}
 function resetTimer(){pauseTimer();timerSecs=(parseInt(document.getElementById('focusMins').value)||25)*60;document.getElementById('timerDisplay').textContent=fmt(timerSecs);}
 document.getElementById('focusMins').addEventListener('change',resetTimer);
 try{resetTimer();}catch(e){console.error('timer init',e);}
@@ -565,6 +579,7 @@ function stopAllSound(){
   if(activeAudioEl){activeAudioEl.pause();activeAudioEl=null;}
   playingTrackId=null;
   renderTrackList();
+  try{updateNowPlaying();}catch(e){}
 }
 function makeBrownBuffer(ctx){
   const size=2*ctx.sampleRate;const buf=ctx.createBuffer(1,size,ctx.sampleRate);const d=buf.getChannelData(0);
@@ -607,9 +622,9 @@ function playTrack(id){
   const custom=customTracks.find(t=>t.id===id);
   if(custom){
     activeAudioEl=new Audio(custom.url);activeAudioEl.loop=true;activeAudioEl.play();
-    playingTrackId=id;renderTrackList();return;
+    playingTrackId=id;renderTrackList();try{updateNowPlaying();}catch(e){}return;
   }
-  playBuiltin(id);renderTrackList();
+  playBuiltin(id);renderTrackList();try{updateNowPlaying();}catch(e){}
 }
 function addCustomTrack(e){
   const file=e.target.files[0];if(!file)return;
@@ -837,7 +852,7 @@ setInterval(()=>{
   }catch(e){console.error('notif interval',e);}
 },60000);
 
-// ===== TAC — Gemini-powered assistant =====
+// ===== TAC — multi-provider assistant (Gemini / OpenAI / Grok), floating everywhere =====
 const DEFAULT_TAC_PERSONA=`You are Tac, the assistant built into the Huygens app.
 You must strictly follow this system prompt for every single reply.
 
@@ -847,25 +862,50 @@ WHO YOU'RE TALKING TO: an 18-year-old first-year CSE student with ADHD. He is ge
 
 HOW YOU MUST BEHAVE:
 1. Sound like a real mix of both ages above — never like a corporate wellness bot or generic chatbot.
-2. Below each message you will receive a CONTEXT block pulled live from his to-do lists, budget, focus log and diary. Actually use specific details from it (a real task name, how much of the budget is left, his best focus hour, a line from his diary) instead of vague generic advice.
-3. Keep his ADHD in mind: give small, concrete, timed next steps rather than long overwhelming lists. One clear next action beats five good ones.
-4. Be honest and direct if he's drifting from a goal — say so plainly and kindly, then give one next step, don't just cheerlead.
+2. Below each message you will receive a CONTEXT block pulled live from his to-do lists, budget, focus log and diary. Actually use specific details from it instead of vague generic advice.
+3. Keep his ADHD in mind: give small, concrete, timed next steps rather than long overwhelming lists.
+4. Be honest and direct if he's drifting from a goal — say so plainly and kindly, then give one next step.
 5. Keep replies reasonably short unless he explicitly asks for a detailed plan or schedule.
 6. Never diagnose or give medical advice — for anything medical or a mental-health crisis, tell him to talk to a real doctor, counselor, or a trusted adult.`;
 
-function loadTacConfig(){
-  const key=load('hg-gemini-key','');
-  const model=load('hg-gemini-model','gemini-2.0-flash');
-  document.getElementById('geminiKey').value=key;
-  document.getElementById('geminiModel').value=model;
-  document.getElementById('geminiStatus').textContent=key?'Key saved for this browser.':'No key saved yet — Tac cannot reply without one.';
-  document.getElementById('tacSystemPrompt').value=load('hg-tac-prompt',DEFAULT_TAC_PERSONA);
+const AI_DEFAULT_MODELS={gemini:'gemini-2.0-flash',openai:'gpt-4o-mini',grok:'grok-2-latest'};
+const AI_LABELS={gemini:'Gemini',openai:'ChatGPT',grok:'Grok'};
+
+function toggleTacPanel(){
+  const p=document.getElementById('tacPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')){document.getElementById('tacChat').scrollTop=9e9;}
 }
-function saveGeminiConfig(){
-  store('hg-gemini-key',document.getElementById('geminiKey').value.trim());
-  store('hg-gemini-model',document.getElementById('geminiModel').value.trim()||'gemini-2.0-flash');
-  document.getElementById('geminiStatus').textContent='Saved ✔';
-  toast('Gemini settings saved');
+function toggleTacSettings(){
+  const box=document.getElementById('tacSettingsBox');
+  box.style.display=box.style.display==='none'?'block':'none';
+}
+function onProviderChange(){
+  const provider=document.getElementById('aiProvider').value;
+  document.getElementById('aiKey').value=load('hg-ai-key-'+provider,'');
+  document.getElementById('aiModel').value=load('hg-ai-model-'+provider,AI_DEFAULT_MODELS[provider]);
+  refreshAIStatus();
+}
+function refreshAIStatus(){
+  const provider=document.getElementById('aiProvider').value;
+  const key=load('hg-ai-key-'+provider,'');
+  document.getElementById('aiStatus').textContent=key?AI_LABELS[provider]+' key saved for this browser.':'No '+AI_LABELS[provider]+' key saved yet.';
+}
+function loadTacConfig(){
+  const provider=load('hg-ai-provider','gemini');
+  document.getElementById('aiProvider').value=provider;
+  document.getElementById('aiKey').value=load('hg-ai-key-'+provider,'');
+  document.getElementById('aiModel').value=load('hg-ai-model-'+provider,AI_DEFAULT_MODELS[provider]);
+  document.getElementById('tacSystemPrompt').value=load('hg-tac-prompt',DEFAULT_TAC_PERSONA);
+  refreshAIStatus();
+}
+function saveAIConfig(){
+  const provider=document.getElementById('aiProvider').value;
+  store('hg-ai-provider',provider);
+  store('hg-ai-key-'+provider,document.getElementById('aiKey').value.trim());
+  store('hg-ai-model-'+provider,document.getElementById('aiModel').value.trim()||AI_DEFAULT_MODELS[provider]);
+  refreshAIStatus();
+  toast(AI_LABELS[provider]+' connection saved');
 }
 function saveSystemPrompt(){
   store('hg-tac-prompt',document.getElementById('tacSystemPrompt').value);
@@ -897,7 +937,7 @@ Recent diary: ${diaryLines}`;
 
 let tacHistory=load('hg-tac-history',[]);
 function renderTacChat(){
-  const el=document.getElementById('tacChat');el.innerHTML='';
+  const el=document.getElementById('tacChat');if(!el)return;el.innerHTML='';
   tacHistory.forEach(m=>{
     const b=document.createElement('div');b.className='bubble '+(m.role==='user'?'user':'tac');
     b.textContent=m.text;el.appendChild(b);
@@ -911,12 +951,35 @@ function addBubble(role,text){
   store('hg-tac-history',tacHistory);
   renderTacChat();
 }
+
+async function callGemini(key,model,systemText,history){
+  const contents=history.map(m=>({role:m.role==='user'?'user':'model',parts:[{text:m.text}]}));
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({system_instruction:{parts:[{text:systemText}]},contents})
+  });
+  const data=await res.json();
+  if(!res.ok)throw new Error((data.error&&data.error.message)||JSON.stringify(data));
+  return (data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts.map(p=>p.text).join(''))||'(empty reply)';
+}
+async function callOpenAIStyle(baseUrl,key,model,systemText,history){
+  const messages=[{role:'system',content:systemText},...history.map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}))];
+  const res=await fetch(baseUrl,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model,messages})
+  });
+  const data=await res.json();
+  if(!res.ok)throw new Error((data.error&&data.error.message)||JSON.stringify(data));
+  return (data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||'(empty reply)';
+}
 async function sendTac(){
   const input=document.getElementById('tacInput');
   const msg=input.value.trim();if(!msg)return;
-  const key=load('hg-gemini-key','');
-  const model=load('hg-gemini-model','gemini-2.0-flash');
-  if(!key){toast('Add your Gemini API key in the card above first');return;}
+  const provider=load('hg-ai-provider','gemini');
+  const key=load('hg-ai-key-'+provider,'');
+  const model=load('hg-ai-model-'+provider,AI_DEFAULT_MODELS[provider]);
+  if(!key){toast('Add your '+AI_LABELS[provider]+' key first (tap ⋯)');toggleTacSettings();return;}
   addBubble('user',msg);
   input.value='';
   const thinkingEl=document.createElement('div');thinkingEl.className='bubble tac';thinkingEl.textContent='…';
@@ -924,26 +987,41 @@ async function sendTac(){
   document.getElementById('tacChat').scrollTop=9e9;
   const persona=load('hg-tac-prompt',DEFAULT_TAC_PERSONA);
   const systemText=persona+'\n\n'+buildContext();
-  const contents=tacHistory.slice(-10).map(m=>({role:m.role==='user'?'user':'model',parts:[{text:m.text}]}));
+  const history=tacHistory.slice(-10);
   try{
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({system_instruction:{parts:[{text:systemText}]},contents})
-    });
-    const data=await res.json();
+    let reply;
+    if(provider==='gemini')reply=await callGemini(key,model,systemText,history);
+    else if(provider==='openai')reply=await callOpenAIStyle('https://api.openai.com/v1/chat/completions',key,model,systemText,history);
+    else if(provider==='grok')reply=await callOpenAIStyle('https://api.x.ai/v1/chat/completions',key,model,systemText,history);
     thinkingEl.remove();
-    if(!res.ok){
-      addBubble('tac','⚠️ Gemini returned an error: '+(data.error&&data.error.message?data.error.message:JSON.stringify(data)));
-      return;
-    }
-    const reply=data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts.map(p=>p.text).join('')||"(empty reply)";
     addBubble('tac',reply);
   }catch(e){
     thinkingEl.remove();
-    addBubble('tac','⚠️ Could not reach Gemini. If you\'re using this inside Claude\'s in-chat preview, that\'s expected — the preview sandbox only allows network calls to a small fixed list of hosts and generativelanguage.googleapis.com is not on it. Download the Huygens file and open it directly in your own browser (or host it yourself) and Tac will be able to reach Gemini normally. If you already did that, double-check your API key and model name.');
+    addBubble('tac','⚠️ Could not reach '+AI_LABELS[provider]+'. If you\'re using this inside Claude\'s in-chat preview, that\'s expected — the preview sandbox only allows network calls to a small fixed list of hosts, and AI provider APIs aren\'t on it. Download the Huygens file and open it directly in your own browser (or host it yourself) and Tac will reach '+AI_LABELS[provider]+' normally. If you already did that: '+e.message);
   }
 }
+
+// "Now playing"-style notification for the timer and focus sounds
+let nowPlayingNotif=null;
+function trackNameFor(id){
+  const t=[...BUILTIN_TRACKS,...customTracks].find(x=>x.id===id);
+  return t?t.name:null;
+}
+function updateNowPlaying(){
+  try{
+    const trackName=trackNameFor(playingTrackId);
+    if(!trackName && !running){
+      if(nowPlayingNotif){try{nowPlayingNotif.close();}catch(e){}nowPlayingNotif=null;}
+      return;
+    }
+    if(!(window.Notification && Notification.permission==='granted'))return;
+    const title=trackName?('🎧 '+trackName):'⏱️ Huygens focus timer';
+    const body=running?('Focus timer • '+fmt(timerSecs)+' left'+(trackName?(' • '+trackName+' playing'):'')):(trackName?'Playing on loop':'');
+    nowPlayingNotif=new Notification(title,{body,tag:'huygens-player',silent:true});
+  }catch(e){}
+}
+setInterval(()=>{try{if(playingTrackId||running)updateNowPlaying();}catch(e){}},20000);
+
 try{loadTacConfig();renderTacChat();}catch(e){console.error('tac init',e);}
 </script>
 </body>
